@@ -1,7 +1,19 @@
+"""
+appointment_service.py
+
+Assignment Requirement: Backend service that mocks appointment data and implements:
+- CRUD operations (Create, Read, Update, Delete)
+- Filtering by date, status, and doctorName
+- Conflict detection (same doctor / overlapping times)
+
+This service simulates Lambda/AppSync logic that would connect to Aurora PostgreSQL in production.
+"""
+
 from datetime import datetime, timedelta
 import uuid
 from typing import List, Dict, Optional
 
+# Mock appointment data - mirrors the frontend mock data
 MOCK_APPOINTMENTS: List[Dict] = [
     {
         "id": str(uuid.uuid4()),
@@ -130,16 +142,28 @@ APPOINTMENTS: List[Dict] = MOCK_APPOINTMENTS.copy()
 
 
 def _time_to_minutes(time_str: str) -> int:
+    """Helper: Convert HH:MM time string to minutes since midnight."""
     """Convert HH:MM -> minutes since midnight."""
     h, m = map(int, time_str.split(":"))
     return h * 60 + m
 
 
 def _overlaps(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    """Helper: Check if two time ranges overlap."""
     return a_start < b_end and b_start < a_end
 
 
 def get_appointments(filters: Optional[Dict] = None) -> List[Dict]:
+    """
+    Assignment Requirement: Query appointments with optional filters
+    
+    Filters supported:
+    - date: Filter by exact date (YYYY-MM-DD)
+    - status: Filter by status (Scheduled, Confirmed, Completed, Cancelled, Upcoming)
+    - doctorName: Filter by doctor name
+    
+    Returns a copy of filtered appointments.
+    """
     results = APPOINTMENTS
     if not filters:
         return results.copy()
@@ -153,6 +177,14 @@ def get_appointments(filters: Optional[Dict] = None) -> List[Dict]:
 
 
 def create_appointment(payload: Dict) -> Dict:
+    """
+    Assignment Requirement: Create appointment with validation and overlap detection
+    
+    Validates required fields and prevents time conflicts for the same doctor
+    on the same date. Raises ValueError if validation fails or conflict detected.
+    
+    Required fields: patientName, date, time, duration, doctorName, mode
+    """
     required = ["patientName", "date", "time", "duration", "doctorName", "mode"]
     for k in required:
         if k not in payload or payload[k] is None or payload[k] == "":
@@ -165,6 +197,10 @@ def create_appointment(payload: Dict) -> Dict:
 
     new_start = _time_to_minutes(time)
     new_end = new_start + duration
+    
+    # Assignment Requirement: Conflict detection
+    # Check for overlapping appointments for the same doctor on the same date
+    # Cancelled appointments are excluded from conflict checks
     for appt in APPOINTMENTS:
         if appt["date"] != date:
             continue
@@ -195,6 +231,12 @@ def create_appointment(payload: Dict) -> Dict:
 
 
 def update_appointment_status(appt_id: str, new_status: str) -> Dict:
+    """
+    Assignment Requirement: Update appointment status
+    
+    Updates the status of an appointment by ID.
+    Raises ValueError if appointment not found.
+    """
     for appt in APPOINTMENTS:
         if appt["id"] == appt_id:
             appt["status"] = new_status
@@ -203,7 +245,12 @@ def update_appointment_status(appt_id: str, new_status: str) -> Dict:
 
 
 def delete_appointment(appt_id: str) -> bool:
-    """Delete appointment by id. Returns True if removed."""
+    """
+    Assignment Requirement: Delete appointment
+    
+    Deletes an appointment by ID. Returns True if removed.
+    Raises ValueError if appointment not found.
+    """
     global APPOINTMENTS
     for i, appt in enumerate(APPOINTMENTS):
         if appt["id"] == appt_id:
