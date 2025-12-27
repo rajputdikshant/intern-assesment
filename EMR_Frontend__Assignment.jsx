@@ -338,7 +338,7 @@ const CalendarWidget = ({ selectedDate, onDateSelect }) => {
 export default function AppointmentManagementView() {
     const today = new Date().toISOString().slice(0, 10);
     const [appointments, setAppointments] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(today);
+    const [selectedDate, setSelectedDate] = useState("2025-11-06");
     const [activeTab, setActiveTab] = useState("Today");
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [creating, setCreating] = useState(false);
@@ -355,14 +355,8 @@ export default function AppointmentManagementView() {
     });
 
     useEffect(() => {
-        fetchAppointments();
+        fetchAppointments({ date: selectedDate });
     }, []);
-
-    useEffect(() => {
-        if (activeTab === "Today") {
-            fetchAppointments({ date: selectedDate });
-        }
-    }, [selectedDate]);
 
     const fetchAppointments = async (filters = {}) => {
         try {
@@ -405,6 +399,12 @@ export default function AppointmentManagementView() {
             await fetchAppointments();
         }
     };
+
+    useEffect(() => {
+        if (activeTab === "Today") {
+            fetchAppointments({ date: selectedDate });
+        }
+    }, [selectedDate]);
 
     const handleDateSelect = async (date) => {
         setSelectedDate(date);
